@@ -1,0 +1,32 @@
+#!/usr/bin/tcsh
+
+# SCRIPT FOR LAUNCHING 100 MBHB NOISE MODEL JOBS
+# Each job runs: ./SNR_Fisher_Single_Source sampling_${n}.txt PulsarPop_N_${n}.dat
+# File paths are handled inside the executable
+
+mkdir -p jobs
+
+foreach num (`seq 0 99`)
+
+    rm -f jobs/launch_${num}.sh
+
+    setenv mem 4
+
+    echo "$num"
+
+    echo '#\!/bin/bash' > jobs/launch_${num}.sh
+    echo '#SBATCH --job-name=SNR_'"$num" >> jobs/launch_${num}.sh
+    echo '#SBATCH --output='"$PWD"'/jobs/'"$num"'_%J.out' >> jobs/launch_${num}.sh
+    echo '#SBATCH --ntasks=1' >> jobs/launch_${num}.sh
+    echo '#SBATCH --time=04:00:00' >> jobs/launch_${num}.sh
+    echo '#SBATCH --mem-per-cpu='"$mem"'g' >> jobs/launch_${num}.sh
+    echo " " >> jobs/launch_${num}.sh
+
+    echo 'ml mamba' >> jobs/launch_${num}.sh
+    echo 'mamba activate cpp_env' >> jobs/launch_${num}.sh
+    echo 'cd '"$PWD" >> jobs/launch_${num}.sh
+    echo './SNR_Fisher_Single_Source sampling_'"$num"'.txt PulsarPop_N_'"$num"'.dat' >> jobs/launch_${num}.sh
+
+    sbatch jobs/launch_${num}.sh
+end
+
