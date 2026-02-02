@@ -12,7 +12,7 @@ LIBS = $(GSL_LIBS) -lstdc++ -lgfortran
 # Use rpath so the binary knows where conda’s libgsl is
 RPATH = -Wl,-rpath,$(CONDA_PREFIX)/lib
 
-all: GWB_SMBHB.cpp
+all: GWB_SMBHB
 
 GWB_SMBHB: GWB_SMBHB.o bessel/CBESSEL.o  bessel/fortran_bessel_jn.o
 	$(CXX) GWB_SMBHB.o bessel/CBESSEL.o bessel/fortran_bessel_jn.o -o $@ $(LIBS) $(RPATH)
