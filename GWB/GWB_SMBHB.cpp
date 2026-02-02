@@ -178,7 +178,7 @@ int main(int argc, char* argv[])
 
 	//binary system properties:
 	my_type Mc_5_3;
-	my_type log10_Mc, z_loc, log10f_gw, q_loc, e_loc,i_loc;
+	my_type M1_loc, M2_loc, f_gw_obs_loc, a_loc, e_loc, z_loc, i_loc, PSI_loc, RA_loc, DEC_loc, l0_loc, y0_loc;
     //pol contribution
 	my_type a,b;
 	my_type MeanAng;   
@@ -191,7 +191,7 @@ int main(int argc, char* argv[])
     //calculate the GWB and save the index with amplitude larger than1e-16:
 	for (int n_s = 0; n_s < N_sources; n_s++)
 	{
-	    read_model >> log10_Mc  >> z_loc  >> log10f_gw  >> q_loc   >> e_loc   >> i_loc;
+	    read_model >> M1_loc >> M2_loc >> f_gw_obs_loc >> a_loc >> e_loc >> z_loc >> i_loc >> PSI_loc >> RA_loc >> DEC_loc >> l0_loc >> y0_loc;
                         
 	    /////////////////////////////////////////////////////////////////////
 	    //e_loc=0.;
@@ -199,9 +199,9 @@ int main(int argc, char* argv[])
 	    Mc_5_3 = pow(10., log10_Mc * 5./3. );
         if (e_loc ==0) e_loc=0.000001; //stability fisher matrix derivative
 	    //lets calculate the orbital observed frequency self consistently; 
-	    my_type f = pow(10.,log10f_gw)/2.; //orbital mean frew
-	    my_type f_gw = 2.*f; //observed gw frequecy if e=0
-	    my_type f_r = f*(1.+z_loc); //restframe orb freq (Hz)
+	    my_type f_kep_rest = (1/(2*math.pi)) * sqrt(  G*(M1_loc+M2_loc)/(a_loc*a_loc*a_loc)); //restframe kep freq (Hz)
+	    my_type f_kep_obs = f_kep_rest/(1.+z_loc); //restframe orb freq (Hz)
+		my_type f_gw_obs = 2.*f_kep_obs; //gw observed freq (Hz)
 
         //Derive the comoving distance
 		int id = int( (z_loc - min_zD)/delta_zD );
@@ -220,7 +220,7 @@ int main(int argc, char* argv[])
 		my_type n_max = 4*n_peak(e_loc);
 
 		//calculate gw amplitude:
-		my_type A_max = 2.*G_5_3*Mc_5_3*(pow(2.*f*pi*(1+z_loc) ,2./3.))/(D_M_distance*c_4); //amplitude; 
+		my_type A_max = 2.*G_5_3*Mc_5_3*(pow(2.*f_gw_obs*pi*(1+z_loc) ,2./3.))/(D_M_distance*c_4); //amplitude; 
     
 		// compute the GWB by adding sources
 		for (int n = 1; n <= ceil(n_max); n++)// cycle over harmonics
@@ -228,16 +228,16 @@ int main(int argc, char* argv[])
 		    g_n_e = g_func(n, e_loc);
 		    if(g_n_e==0) continue;
 
-		    f_n = n*f_r;
+		    f_n = n*f_kep_rest;
 
-		    my_type index = (f_n/(1+z_loc)-min_f)/step_fobs;
+		    my_type index = (f_n/(1.+z_loc)-min_f)/step_fobs;
 
 		    if (index > N_bin_f) break;
 			
 			if (index < 0) continue;
 			
 			// Amaro-seoane et al. 2010
-			h2_n_square = 2.*2.*MeanAng*MeanAng* 4.*G_5_3*G_5_3*Mc_5_3*Mc_5_3/(c_8 * D_M_distance*D_M_distance)*pow(2.*pi*f_r,4./3.) / (n*n) * g_n_e * f_n/(1.+z_loc) / step_fobs;
+			h2_n_square = 2.*2.*MeanAng*MeanAng* 4.*G_5_3*G_5_3*Mc_5_3*Mc_5_3/(c_8 * D_M_distance*D_M_distance)*pow(2.*pi*f_kep_rest,4./3.) / (n*n) * g_n_e * f_n/(1.+z_loc) / step_fobs;
 			hc_gwb_2_vec[int(index)] += h2_n_square; //gwb
 			hc_gwb_2_vec_sub[int(index)] += h2_n_square; //gwb
 
