@@ -88,12 +88,11 @@ int main(int argc, char* argv[])
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Catalogue already sorted by Amplitude:
-	string path_Models = "SMBHB_populations/";
+	string path_Models = "/home/rtruant/PTA_GravSignalCodes/PopSMBHB/";
 
 	//model name + realization name             
 	string SMBHB_popName = argv[1];
 	    
-
     // track execution time
 	timeval start, end;
 	gettimeofday(&start, NULL);
@@ -111,8 +110,8 @@ int main(int argc, char* argv[])
     my_type min_f = 1./(T_obs*year), max_f = 1e-7; // Hz
     const int N_bin_f = int( ( max_f-min_f ) / ( 1./(T_obs*year) ) ) + 1;
 
-   //frequency grid, gwb, and the gwb with the subtracted contribution if the snr of the source is larger than the setted treshold
-    T1 F_obs(N_bin_f+1), hc_gwb_2_vec(N_bin_f+1), hc_gwb_2_vec_sub(N_bin_f+1) ;
+   //frequency grid, gwb
+    T1 F_obs(N_bin_f+1), hc_gwb_2_vec(N_bin_f+1);
 	//array containing the SNR and strain for each bin
 	T1 SNR_2_bin(N_bin_f+1), hc_2_bin(N_bin_f+1);
   
@@ -122,8 +121,8 @@ int main(int argc, char* argv[])
 	    F_obs[i] = min_f + 1./(T_obs*year)*i;
 	    //cout << F_obs[i] << endl;
 	    hc_gwb_2_vec[i] = 0.;
-		hc_gwb_2_vec_sub[i]=0.;
 	}
+
 	my_type step_fobs = F_obs[1]-F_obs[0];
     
 	cout<< min_f << ", max_fobs = " << max_f << ", delta_fobs = " << step_fobs << endl;
@@ -177,16 +176,11 @@ int main(int argc, char* argv[])
 	}
 
 	//binary system properties:
-	my_type Mc_5_3;
+	my_type Mc, Mc_5_3;
 	my_type M1_loc, M2_loc, f_gw_obs_loc, a_loc, e_loc, z_loc, i_loc, PSI_loc, RA_loc, DEC_loc, l0_loc, y0_loc;
     //pol contribution
 	my_type a,b;
 	my_type MeanAng;   
-
-	//vector containing the index of the possible resolvable source
-	vec_of_int Id;
-	//number of possible resolvable sources:
-	int N_res_source=0; 
     
     //calculate the GWB and save the index with amplitude larger than1e-16:
 	for (int n_s = 0; n_s < N_sources; n_s++)
@@ -196,10 +190,11 @@ int main(int argc, char* argv[])
 	    /////////////////////////////////////////////////////////////////////
 	    //e_loc=0.;
 	    //chirp mass
-	    Mc_5_3 = pow(10., log10_Mc * 5./3. );
+		Mc = pow( M1_loc*M2_loc, 3./5. ) / pow( M1_loc+M2_loc, 1./5. );
+	    Mc_5_3 = pow(Mc, 5./3. );
         if (e_loc ==0) e_loc=0.000001; //stability fisher matrix derivative
 	    //lets calculate the orbital observed frequency self consistently; 
-	    my_type f_kep_rest = (1/(2*math.pi)) * sqrt(  G*(M1_loc+M2_loc)/(a_loc*a_loc*a_loc)); //restframe kep freq (Hz)
+	    my_type f_kep_rest = (1/(2*pi)) * sqrt(  G*(M1_loc+M2_loc)/(a_loc*a_loc*a_loc)); //restframe kep freq (Hz)
 	    my_type f_kep_obs = f_kep_rest/(1.+z_loc); //restframe orb freq (Hz)
 		my_type f_gw_obs = 2.*f_kep_obs; //gw observed freq (Hz)
 
@@ -216,11 +211,8 @@ int main(int argc, char* argv[])
         //bessel function combination, harmonic freq, gwb values
 		my_type g_n_e, f_n, h2_n_square;
 
-        //harmonic at which the emmision is brightest
+        //harmonic at which the emmision is brightestx4
 		my_type n_max = 4*n_peak(e_loc);
-
-		//calculate gw amplitude:
-		my_type A_max = 2.*G_5_3*Mc_5_3*(pow(2.*f_gw_obs*pi*(1+z_loc) ,2./3.))/(D_M_distance*c_4); //amplitude; 
     
 		// compute the GWB by adding sources
 		for (int n = 1; n <= ceil(n_max); n++)// cycle over harmonics
@@ -239,7 +231,6 @@ int main(int argc, char* argv[])
 			// Amaro-seoane et al. 2010
 			h2_n_square = 2.*2.*MeanAng*MeanAng* 4.*G_5_3*G_5_3*Mc_5_3*Mc_5_3/(c_8 * D_M_distance*D_M_distance)*pow(2.*pi*f_kep_rest,4./3.) / (n*n) * g_n_e * f_n/(1.+z_loc) / step_fobs;
 			hc_gwb_2_vec[int(index)] += h2_n_square; //gwb
-			hc_gwb_2_vec_sub[int(index)] += h2_n_square; //gwb
 
 		}
 
@@ -262,8 +253,6 @@ int main(int argc, char* argv[])
 
 	gettimeofday(&end, NULL);
 	double time_sampling = (double) ((end.tv_sec  - start.tv_sec) * 1000000u + end.tv_usec - start.tv_usec) / 1.e6;
-
-	//save the subtracted gwb:
 
 	cout << "Time elapsed: " << time_sampling << "sec" << endl;	
 
